@@ -75,7 +75,8 @@ int main(int argc, const char *argv[])
     bool bVis = false;            // visualize results
 
     /* MAIN LOOP OVER ALL IMAGES */
-
+    std::vector<float> ttcCameras;
+    std::vector<float> ttcLidarPts;
     for (size_t imgIndex = 0; imgIndex <= imgEndIndex - imgStartIndex; imgIndex+=imgStepWidth)
     {
         /* LOAD IMAGE INTO BUFFER */
@@ -222,6 +223,7 @@ int main(int argc, const char *argv[])
                     if (it1->second == it2->boxID) // check wether current match partner corresponds to this BB
                     {
                         currBB = &(*it2);
+                        break;
                     }
                 }
 
@@ -230,6 +232,7 @@ int main(int argc, const char *argv[])
                     if (it1->first == it2->boxID) // check wether current match partner corresponds to this BB
                     {
                         prevBB = &(*it2);
+                        break;
                     }
                 }
 
@@ -240,17 +243,20 @@ int main(int argc, const char *argv[])
                     //// TASK FP.2 -> compute time-to-collision based on Lidar data (implement -> computeTTCLidar)
                     double ttcLidar; 
                     computeTTCLidar(prevBB->lidarPoints, currBB->lidarPoints, sensorFrameRate, ttcLidar);
+                    ttcLidarPts.push_back(ttcLidar);
                     //// EOF STUDENT ASSIGNMENT
 
                     //// STUDENT ASSIGNMENT
                     //// TASK FP.3 -> assign enclosed keypoint matches to bounding box (implement -> clusterKptMatchesWithROI)
                     //// TASK FP.4 -> compute time-to-collision based on camera (implement -> computeTTCCamera)
                     double ttcCamera;
-                    clusterKptMatchesWithROI(*currBB, (dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);                    
-                    computeTTCCamera((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera);
+                    clusterKptMatchesWithROI(*currBB, (dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);
+
+                    computeTTCCamera((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera, &(dataBuffer.end()- 1)->cameraImg);
+                    ttcCameras.push_back(ttcCamera);
                     //// EOF STUDENT ASSIGNMENT
 
-                    bVis = true;
+                    bVis = false;
                     if (bVis)
                     {
                         cv::Mat visImg = (dataBuffer.end() - 1)->cameraImg.clone();
@@ -275,6 +281,15 @@ int main(int argc, const char *argv[])
         }
 
     } // eof loop over all images
+    std::cout << "Total ttcCamera:" << std::endl;
+    for(auto i : ttcCameras){
+        std::cout << i << std::endl;
+    }
+
+    std::cout << "Total ttcLidar" << std::endl;
+    for(auto i : ttcLidarPts){
+        std::cout << i << std::endl;
+    }
 
     return 0;
 }
